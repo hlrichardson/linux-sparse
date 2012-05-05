@@ -30,6 +30,8 @@
 
 static int false_nesting = 0;
 
+struct preprocess_hook *preprocess_hook = NULL;
+
 #define INCLUDEPATHS 300
 const char *includepath[INCLUDEPATHS+1] = {
 	"",
@@ -625,6 +627,8 @@ static int expand(struct token **list, struct symbol *sym)
 
 	last = token->next;
 	tail = substitute(list, sym->expansion, args);
+	if (preprocess_hook && preprocess_hook->expand)
+		preprocess_hook->expand(token, list, tail);
 	*tail = last;
 
 	return 0;

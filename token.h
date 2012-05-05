@@ -171,6 +171,10 @@ struct token {
 	};
 };
 
+struct preprocess_hook {
+	void (*expand)(struct token *macro, struct token **replace, struct token **replace_tail);
+};
+
 #define MAX_STRING 4095
 
 static inline struct token *containing_token(struct token **p)
@@ -188,6 +192,7 @@ static inline struct token *containing_token(struct token **p)
  */
 extern struct token eof_token_entry;
 #define eof_token(x) ((x) == &eof_token_entry)
+extern struct preprocess_hook *preprocess_hook;
 
 extern int init_stream(const char *, int fd, const char **next_path);
 extern const char *stream_name(int stream);
