@@ -875,23 +875,8 @@ static struct symbol_list *sparse_tokenstream(struct token *token)
 	token = preprocess(token);
 
 	if (preprocess_only) {
-		while (!eof_token(token)) {
-			int prec = 1;
-			struct token *next = token->next;
-			const char *separator = "";
-			if (next->pos.whitespace)
-				separator = " ";
-			if (next->pos.newline) {
-				separator = "\n\t\t\t\t\t";
-				prec = next->pos.pos;
-				if (prec > 4)
-					prec = 4;
-			}
-			printf("%s%.*s", show_token(token), prec, separator);
-			token = next;
-		}
+		show_tokenstream(token);
 		putchar('\n');
-
 		return NULL;
 	}
 

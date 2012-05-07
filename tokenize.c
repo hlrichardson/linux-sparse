@@ -180,6 +180,26 @@ const char *show_token(const struct token *token)
 	}
 }
 
+void show_tokenstream(struct token *token)
+{
+	while (!eof_token(token)) {
+		int prec = 1;
+		struct token *next = token->next;
+		const char *separator = "";
+		if (next->pos.whitespace)
+			separator = " ";
+		if (next->pos.newline) {
+			separator = "\n\t\t\t\t\t";
+			prec = next->pos.pos;
+			if (prec > 4)
+				prec = 4;
+		}
+		printf("%s%.*s", show_token(token), prec, separator);
+		token = next;
+	}
+}
+
+
 #define HASHED_INPUT_BITS (6)
 #define HASHED_INPUT (1 << HASHED_INPUT_BITS)
 #define HASH_PRIME 0x9e370001UL
