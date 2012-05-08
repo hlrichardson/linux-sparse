@@ -19,6 +19,18 @@
 #include "symbol.h"
 #include "expression.h"
 
+static void expand_macro(struct token *macro, struct token **replace, struct token **replace_tail)
+{
+	printf("expanding macro %s\n", show_token(macro));
+	printf("expand result");
+	show_tokenstream(*replace);
+	printf("\n");
+}
+
+struct preprocess_hook test_macro_hook = {
+	.expand = expand_macro,
+};
+
 void test_macro(char *filename)
 {
 	struct token *token;
@@ -31,13 +43,18 @@ void test_macro(char *filename)
 
 	token = tokenize(filename, fd, NULL, includepath);
 	show_tokenstream(token);
+	printf("\n");
 	token = preprocess(token);
+	printf("After preprocessing\n");
+	show_tokenstream(token);
 }
 
 int main(int argc, char **argv)
 {
 	struct string_list *filelist = NULL;
 	char *file;
+
+	preprocess_hook = &test_macro_hook;
 
 	sparse_initialize(argc, argv, &filelist);
 	FOR_EACH_PTR_NOTAG(filelist, file) {
