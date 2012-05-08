@@ -141,6 +141,9 @@ struct symbol {
 			struct token *expansion;
 			struct token *arglist;
 			struct scope *used_in;
+			struct /* preprocess hook */ {
+				struct symbol *parent;
+			};
 		};
 		struct /* NS_PREPROCESSOR */ {
 			int (*handler)(struct stream *, struct token **, struct token *);

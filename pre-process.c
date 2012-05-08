@@ -29,6 +29,7 @@
 #include "scope.h"
 
 static int false_nesting = 0;
+static struct symbol *parent = NULL;
 
 struct preprocess_hook *preprocess_hook = NULL;
 
@@ -179,7 +180,14 @@ static inline struct token *scan_next(struct token **where)
 	if (token_type(token) != TOKEN_UNTAINT)
 		return token;
 	do {
-		token->ident->tainted = 0;
+		struct ident *ident = token->ident;
+		ident->tainted = 0;
+
+		if (preprocess_hook) {
+			struct symbol *sym = lookup_macro(ident);
+			parent = sym->parent;
+		}
+		
 		token = token->next;
 	} while (token_type(token) == TOKEN_UNTAINT);
 	*where = token;
@@ -615,11 +623,16 @@ static int expand(struct token **list, struct symbol *sym)
 		return 1;
 	}
 
+	if (preprocess_hook) {
+		sym->parent = parent;
+		parent = sym;
+	}
+
 	if (sym->arglist) {
 		if (!match_op(scan_next(&token->next), '('))
-			return 1;
+			goto error;
 		if (!collect_arguments(token->next, sym->arglist, args, token))
-			return 1;
+			goto error;
 		expand_arguments(nargs, args);
 	}
 
@@ -632,6 +645,11 @@ static int expand(struct token **list, struct symbol *sym)
 	*tail = last;
 
 	return 0;
+
+error:
+	if (preprocess_hook)
+		parent = sym->parent;
+	return 1;
 }
 
 static const char *token_name_sequence(struct token *token, int endop, struct token *start)
