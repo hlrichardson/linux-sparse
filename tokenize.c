@@ -167,7 +167,7 @@ const char *show_token(const struct token *token)
 		return buffer;
 
 	case TOKEN_UNTAINT:
-		sprintf(buffer, "<untaint>");
+		sprintf(buffer, "<untaint: %s>", show_ident(token->ident));
 		return buffer;
 
 	case TOKEN_ARG_COUNT:
