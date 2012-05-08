@@ -172,7 +172,8 @@ struct token {
 };
 
 struct preprocess_hook {
-	void (*expand)(struct token *macro, struct token **replace, struct token **replace_tail);
+	void (*expand)(struct token *macro, struct token **replace, struct token **replace_tail,
+		       struct symbol *parent);
 };
 
 #define MAX_STRING 4095

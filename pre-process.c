@@ -641,7 +641,7 @@ static int expand(struct token **list, struct symbol *sym)
 	last = token->next;
 	tail = substitute(list, sym->expansion, args);
 	if (preprocess_hook && preprocess_hook->expand)
-		preprocess_hook->expand(token, list, tail);
+		preprocess_hook->expand(token, list, tail, sym->parent);
 	*tail = last;
 
 	return 0;
@@ -1813,9 +1813,6 @@ static void do_preprocess(struct token **list)
 	while (!eof_token(next = scan_next(list))) {
 		struct stream *stream = input_streams + next->pos.stream;
 
-		printf("nextlist:");
-		show_tokenstream(next);
-		printf("\n");
 		if (next->pos.newline && match_op(next, '#')) {
 			if (!next->pos.noexpand) {
 				preprocessor_line(stream, list);

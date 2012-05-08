@@ -19,10 +19,11 @@
 #include "symbol.h"
 #include "expression.h"
 
-static void expand_macro(struct token *macro, struct token **replace, struct token **replace_tail)
+static void expand_macro(struct token *macro, struct token **replace, struct token **replace_tail, struct symbol *parent)
 {
-	printf("expanding macro %s\n", show_token(macro));
-	printf("expand result");
+	printf("expanding macro %s ", show_token(macro));
+	printf("inside %s\n", show_ident(parent ? parent->ident: NULL));
+	printf("expand result: ");
 	show_tokenstream(*replace);
 	printf("\n");
 }
