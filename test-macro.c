@@ -19,17 +19,31 @@
 #include "symbol.h"
 #include "expression.h"
 
-static void expand_macro(struct token *macro, struct token **replace, struct token **replace_tail, struct symbol *parent)
+static void expand_arg(struct token *macro, struct symbol *sym, int i, struct token *orig, struct token *expanded)
 {
-	printf("expanding macro %s ", show_token(macro));
-	printf("inside %s\n", show_ident(parent ? parent->ident: NULL));
+	printf("arg%d in %s :", i, show_token(macro));
+	show_tokenstream(orig);
+	printf(" -> ");
+	show_tokenstream(expanded);
+	printf("\n");
+	
+}
+
+static void expand_macro(struct token *macro, struct symbol *sym,
+			 struct token **replace, struct token **replace_tail)
+{
+	struct symbol *parent = sym->parent;
+
+	printf("macro %s inside", show_token(macro));
+	printf(" %s\n",   show_ident(parent ? parent->ident: NULL));
 	printf("expand result: ");
 	show_tokenstream(*replace);
 	printf("\n");
 }
 
 struct preprocess_hook test_macro_hook = {
-	.expand = expand_macro,
+	.expand_macro = expand_macro,
+	.expand_arg = expand_arg,
 };
 
 void test_macro(char *filename)

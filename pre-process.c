@@ -86,6 +86,7 @@ static struct token *alloc_token(struct position *pos)
 }
 
 static const char *show_token_sequence(struct token *token);
+static int free_preprocessor_line(struct token *token);
 
 /* Expand symbol 'sym' at '*list' */
 static int expand(struct token **, struct symbol *);
@@ -205,7 +206,7 @@ static void expand_list(struct token **list)
 
 static void preprocessor_line(struct stream *stream, struct token **line);
 
-static struct token *collect_arg(struct token *prev, int vararg, struct position *pos)
+static struct token *collect_arg(struct token *prev, int vararg, struct position *pos, struct token **orig)
 {
 	struct stream *stream = input_streams + prev->pos.stream;
 	struct token **p = &prev->next;
@@ -225,8 +226,7 @@ static struct token *collect_arg(struct token *prev, int vararg, struct position
 		switch (token_type(next)) {
 		case TOKEN_STREAMEND:
 		case TOKEN_STREAMBEGIN:
-			*p = &eof_token_entry;
-			return next;
+			goto end;
 		}
 		if (false_nesting) {
 			*p = next->next;
@@ -241,11 +241,20 @@ static struct token *collect_arg(struct token *prev, int vararg, struct position
 		} else if (match_op(next, ',') && !nesting && !vararg) {
 			break;
 		}
+		if (orig) {
+			struct token *dup = __alloc_token(0);
+			*dup = *next;
+			*orig = dup;
+			orig = &(*orig)->next;
+		}
 		next->pos.stream = pos->stream;
 		next->pos.line = pos->line;
 		next->pos.pos = pos->pos;
 		p = &next->next;
 	}
+end:
+	if (orig)
+		*orig = &eof_token_entry;
 	*p = &eof_token_entry;
 	return next;
 }
@@ -258,6 +267,7 @@ struct arg {
 	struct token *arg;
 	struct token *expanded;
 	struct token *str;
+	struct token *orig;
 	int n_normal;
 	int n_quoted;
 	int n_str;
@@ -272,7 +282,7 @@ static int collect_arguments(struct token *start, struct token *arglist, struct 
 	arglist = arglist->next;	/* skip counter */
 
 	if (!wanted) {
-		next = collect_arg(start, 0, &what->pos);
+		next = collect_arg(start, 0, &what->pos, NULL);
 		if (eof_token(next))
 			goto Eclosing;
 		if (!eof_token(start->next) || !match_op(next, ')')) {
@@ -282,7 +292,10 @@ static int collect_arguments(struct token *start, struct token *arglist, struct 
 	} else {
 		for (count = 0; count < wanted; count++) {
 			struct argcount *p = &arglist->next->count;
-			next = collect_arg(start, p->vararg, &what->pos);
+			struct token **origcopy = preprocess_hook ? &args[count].orig : NULL;
+
+			args[count].orig = NULL;
+			next = collect_arg(start, p->vararg, &what->pos, origcopy);
 			arglist = arglist->next->next;
 			if (eof_token(next))
 				goto Eclosing;
@@ -306,6 +319,7 @@ static int collect_arguments(struct token *start, struct token *arglist, struct 
 			args[count].n_normal = p->normal;
 			args[count].n_quoted = p->quoted;
 			args[count].n_str = p->str;
+			args[count].orig = NULL;
 		}
 		if (count < wanted - 1)
 			goto Efew;
@@ -319,7 +333,7 @@ Efew:
 	goto out;
 Emany:
 	while (match_op(next, ',')) {
-		next = collect_arg(next, 0, &what->pos);
+		next = collect_arg(next, 0, &what->pos, NULL);
 		count++;
 	}
 	if (eof_token(next))
@@ -634,14 +648,21 @@ static int expand(struct token **list, struct symbol *sym)
 		if (!collect_arguments(token->next, sym->arglist, args, token))
 			goto error;
 		expand_arguments(nargs, args);
+		if (preprocess_hook && preprocess_hook->expand_arg) {
+			int i;
+			for (i = 0; i < nargs; i++) {
+				preprocess_hook->expand_arg(token, sym, i, args[i].orig, args[i].expanded);
+				free_preprocessor_line(args[i].orig);
+			}
+		}
 	}
 
 	expanding->tainted = 1;
 
 	last = token->next;
 	tail = substitute(list, sym->expansion, args);
-	if (preprocess_hook && preprocess_hook->expand)
-		preprocess_hook->expand(token, list, tail, sym->parent);
+	if (preprocess_hook && preprocess_hook->expand_macro)
+		preprocess_hook->expand_macro(token, sym, list, tail);
 	*tail = last;
 
 	return 0;
