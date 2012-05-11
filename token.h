@@ -172,7 +172,7 @@ struct token {
 };
 
 struct preprocess_hook {
-	void (*expand_macro)(struct token *macro, struct symbol *sym,
+	void (*expand_macro)(struct token *macro, struct symbol *sym, struct token *parent,
 			     struct token **replace, struct token **replace_tail);
 	void (*expand_arg)(struct token *macro, struct symbol *sym, int arg,
 			   struct token *orig, struct token *expanded);

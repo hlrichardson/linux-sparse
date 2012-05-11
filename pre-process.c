@@ -29,7 +29,7 @@
 #include "scope.h"
 
 static int false_nesting = 0;
-static struct symbol *parent = NULL;
+static struct token_list *expanding_macro = NULL;
 
 struct preprocess_hook *preprocess_hook = NULL;
 
@@ -184,11 +184,9 @@ static inline struct token *scan_next(struct token **where)
 		struct ident *ident = token->ident;
 		ident->tainted = 0;
 
-		if (preprocess_hook) {
-			struct symbol *sym = lookup_macro(ident);
-			parent = sym->parent;
-		}
-		
+		if (preprocess_hook)
+			delete_last_token(&expanding_macro);
+
 		token = token->next;
 	} while (token_type(token) == TOKEN_UNTAINT);
 	*where = token;
@@ -631,6 +629,7 @@ static int expand(struct token **list, struct symbol *sym)
 	struct token **tail;
 	int nargs = sym->arglist ? sym->arglist->count.normal : 0;
 	struct arg args[nargs];
+	struct token *parent = NULL;
 
 	if (expanding->tainted) {
 		token->pos.noexpand = 1;
@@ -638,8 +637,8 @@ static int expand(struct token **list, struct symbol *sym)
 	}
 
 	if (preprocess_hook) {
-		sym->parent = parent;
-		parent = sym;
+		parent = last_token(expanding_macro);
+		append_token(&expanding_macro, token); 
 	}
 
 	if (sym->arglist) {
@@ -662,14 +661,14 @@ static int expand(struct token **list, struct symbol *sym)
 	last = token->next;
 	tail = substitute(list, sym->expansion, args);
 	if (preprocess_hook && preprocess_hook->expand_macro)
-		preprocess_hook->expand_macro(token, sym, list, tail);
+		preprocess_hook->expand_macro(token, sym, parent, list, tail);
 	*tail = last;
 
 	return 0;
 
 error:
 	if (preprocess_hook)
-		parent = sym->parent;
+		delete_last_token(&expanding_macro);
 	return 1;
 }
 

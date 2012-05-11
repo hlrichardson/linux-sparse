@@ -29,13 +29,11 @@ static void expand_arg(struct token *macro, struct symbol *sym, int i, struct to
 	
 }
 
-static void expand_macro(struct token *macro, struct symbol *sym,
+static void expand_macro(struct token *macro, struct symbol *sym, struct token *parent,
 			 struct token **replace, struct token **replace_tail)
 {
-	struct symbol *parent = sym->parent;
-
 	printf("macro %s inside", show_token(macro));
-	printf(" %s\n",   show_ident(parent ? parent->ident: NULL));
+	printf(" %s\n", show_token(parent));
 	printf("expand result: ");
 	show_tokenstream(*replace);
 	printf("\n");

@@ -69,6 +69,7 @@ DECLARE_PTR_LIST(instruction_list, struct instruction);
 DECLARE_PTR_LIST(multijmp_list, struct multijmp);
 DECLARE_PTR_LIST(pseudo_list, struct pseudo);
 DECLARE_PTR_LIST(string_list, char);
+DECLARE_PTR_LIST(token_list, struct token);
 
 typedef struct pseudo *pseudo_t;
 
@@ -219,6 +220,21 @@ static inline void add_statement(struct statement_list **list, struct statement 
 static inline void add_expression(struct expression_list **list, struct expression *expr)
 {
 	add_ptr_list(list, expr);
+}
+
+static inline void append_token(struct token_list **list, struct token *token)
+{
+	add_ptr_list(list, token);
+}
+
+static inline struct token*last_token(struct token_list *head)
+{
+	return last_unpack_ptr_list((struct ptr_list *)head);
+}
+
+static inline struct token * delete_last_token(struct token_list **head)
+{
+	return undo_ptr_list_last((struct ptr_list **)head);
 }
 
 #define hashval(x) ((unsigned long)(x))
