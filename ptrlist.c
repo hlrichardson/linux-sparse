@@ -246,3 +246,34 @@ void __free_ptr_list(struct ptr_list **listp)
 
 	*listp = NULL;
 }
+
+void *first_unpack_ptr_list(struct ptr_list *head)
+{
+	struct ptr_list *list;
+
+	if (!head)
+		return NULL;
+	list = head;
+	do {
+		list = list->prev;
+		if (list->nr)
+			return PTR_ENTRY(list, 0);
+	}while (list != head);
+	return NULL;
+}
+
+void *last_unpack_ptr_list(struct ptr_list *head)
+{
+	struct ptr_list *list;
+
+	if (!head)
+		return NULL;
+	list = head;
+	do {
+		list = list->prev;
+		if (list->nr)
+			return PTR_ENTRY(list, list->nr-1);
+	}while (list != head);
+	return NULL;
+}
+

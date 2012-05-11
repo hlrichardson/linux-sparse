@@ -44,6 +44,8 @@ extern void concat_ptr_list(struct ptr_list *a, struct ptr_list **b);
 extern void __free_ptr_list(struct ptr_list **);
 extern int ptr_list_size(struct ptr_list *);
 extern int linearize_ptr_list(struct ptr_list *, void **, int);
+extern void *first_unpack_ptr_list(struct ptr_list *head);
+extern void *last_unpack_ptr_list(struct ptr_list *head);
 
 /*
  * Hey, who said that you can't do overloading in C?
