@@ -72,7 +72,6 @@ static void do_debug_symbol(struct symbol *sym, int indent)
 
 	if (!sym)
 		return;
-	check_sym(sym);
 	fprintf(stderr, "%.*s%s%3d:%lu %s %s (as: %d) %p (%s:%d:%d) %s\n",
 		indent, indent_string, typestr[sym->type],
 		sym->bit_size, sym->ctype.alignment,
@@ -80,7 +79,6 @@ static void do_debug_symbol(struct symbol *sym, int indent)
 		sym, stream_name(sym->pos.stream), sym->pos.line, sym->pos.pos,
 		builtin_typename(sym) ?: "");
 	i = 0;
-	check_sym(sym);
 	FOR_EACH_PTR(sym->ctype.attribute->contexts, context) {
 		/* FIXME: should print context expression */
 		fprintf(stderr, "< context%d: in=%d, out=%d\n",
@@ -312,7 +310,6 @@ deeper:
 		goto out;
 	}
 
-	check_sym(sym);
 	/* Prepend */
 	switch (sym->type) {
 	case SYM_PTR:
