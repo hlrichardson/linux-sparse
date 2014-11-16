@@ -326,6 +326,7 @@ deeper:
 			was_ptr = 0;
 		}
 		append(name, "( ... )");
+		mod = sym->ctype.modifiers;
 		break;
 
 	case SYM_STRUCT:
