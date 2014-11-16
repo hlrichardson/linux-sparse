@@ -632,6 +632,8 @@ const char *type_difference(struct ctype *c1, struct ctype *c2,
 	struct symbol *t1 = c1->base_type;
 	struct symbol *t2 = c2->base_type;
 	int move1 = 1, move2 = 1;
+	unsigned long ignore = ~MOD_PURE;
+
 	mod1 |= c1->modifiers;
 	mod2 |= c2->modifiers;
 	for (;;) {
@@ -728,6 +730,7 @@ const char *type_difference(struct ctype *c1, struct ctype *c2,
 			as1 = t1->ctype.as;
 			mod2 = t2->ctype.modifiers;
 			as2 = t2->ctype.as;
+			ignore = ~0;
 
 			if (base1->variadic != base2->variadic)
 				return "incompatible variadic arguments";
@@ -778,7 +781,7 @@ const char *type_difference(struct ctype *c1, struct ctype *c2,
 	}
 	if (as1 != as2)
 		return "different address spaces";
-	if ((mod1 ^ mod2) & ~MOD_IGNORE & ~MOD_SIGNEDNESS)
+	if ((mod1 ^ mod2) & ~MOD_IGNORE & ~MOD_SIGNEDNESS & ignore)
 		return "different modifiers";
 	return NULL;
 }
