@@ -86,6 +86,7 @@ enum keyword {
 	KW_SHORT	= 1 << 7,
 	KW_LONG		= 1 << 8,
 	KW_EXACT	= 1 << 9,
+	KW_ST_ASSERT	= 1 << 10,
 };
 
 struct context {

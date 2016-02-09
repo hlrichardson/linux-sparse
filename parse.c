@@ -57,7 +57,8 @@ static declarator_t
 	attribute_specifier, typeof_specifier, parse_asm_declarator,
 	typedef_specifier, inline_specifier, auto_specifier,
 	register_specifier, static_specifier, extern_specifier,
-	thread_specifier, const_qualifier, volatile_qualifier;
+	thread_specifier, const_qualifier, volatile_qualifier,
+	static_assert_declarator;
 
 static struct token *parse_if_statement(struct token *token, struct statement *stmt);
 static struct token *parse_return_statement(struct token *token, struct statement *stmt);
@@ -73,6 +74,8 @@ static struct token *parse_context_statement(struct token *token, struct stateme
 static struct token *parse_range_statement(struct token *token, struct statement *stmt);
 static struct token *parse_asm_statement(struct token *token, struct statement *stmt);
 static struct token *toplevel_asm_declaration(struct token *token, struct symbol_list **list);
+static struct token *parse_static_assert_statement(struct token *token, struct statement *stmt);
+static struct token *toplevel_static_assert(struct token *token, struct symbol_list **list);
 
 typedef struct token *attr_t(struct token *, struct symbol *,
 			     struct decl_state *);
@@ -308,6 +311,13 @@ static struct symbol_op asm_op = {
 	.toplevel = toplevel_asm_declaration,
 };
 
+static struct symbol_op static_assert_op = {
+	.type = KW_ST_ASSERT,
+	.declarator = static_assert_declarator,
+	.statement = parse_static_assert_statement,
+	.toplevel = toplevel_static_assert,
+};
+
 static struct symbol_op packed_op = {
 	.attribute = attribute_packed,
 };
@@ -436,6 +446,10 @@ static struct init_keyword {
 	{ "restrict",	NS_TYPEDEF, .op = &restrict_op},
 	{ "__restrict",	NS_TYPEDEF, .op = &restrict_op},
 	{ "__restrict__",	NS_TYPEDEF, .op = &restrict_op},
+
+
+	/* Static assertion */
+	{ "_Static_assert", NS_KEYWORD, .op = &static_assert_op },
 
 	/* Storage class */
 	{ "auto",	NS_TYPEDEF, .op = &auto_op },
@@ -1858,6 +1872,13 @@ static struct token *declaration_list(struct token *token, struct symbol_list **
 static struct token *struct_declaration_list(struct token *token, struct symbol_list **list)
 {
 	while (!match_op(token, '}')) {
+		struct symbol *keyword;
+
+		if (token_type(token) == TOKEN_IDENT) {
+			keyword = lookup_keyword(token->ident, NS_KEYWORD);
+			if (keyword && keyword->op->type == KW_ST_ASSERT)
+				token = keyword->op->declarator(token, NULL);
+		}
 		if (!match_op(token, ';'))
 			token = declaration_list(token, list);
 		if (!match_op(token, ';')) {
@@ -2004,6 +2025,48 @@ static struct token *parse_asm_declarator(struct token *token, struct decl_state
 	token = parse_expression(token->next, &expr);
 	token = expect(token, ')', "after asm");
 	return token;
+}
+
+
+static struct token *parse_static_assert(struct token *token, int expect_semi)
+{
+	struct expression *expr1 = NULL, *expr2 = NULL;
+	int val;
+
+	token = expect(token, '(', "after _Static_assert");
+	token = constant_expression(token, &expr1);
+	token = expect(token, ',', "after first argument of _Static_assert");
+	token = parse_expression(token, &expr2);
+	token = expect(token, ')', "after second argument of _Static_assert");
+
+	if (expect_semi)
+		token = expect(token, ';', "after _Static_assert()");
+
+	val = const_expression_value(expr1);
+
+	if (expr2->type != EXPR_STRING)
+		sparse_error(expr2->pos, "bad string literal");
+	else if (expr1 && (expr1->type == EXPR_VALUE)) {
+		if (!val)
+			sparse_error(expr1->pos, "static assertion failed: %s",
+				     show_string(expr2->string));
+	}
+
+	return token;
+}
+
+static struct token *static_assert_declarator(struct token *token, struct decl_state *ctx)
+{
+	return parse_static_assert(token->next, 0);
+}
+
+static struct token *parse_static_assert_statement(struct token *token, struct statement *stmt)
+{
+	return parse_static_assert(token->next, 1);
+}
+static struct token *toplevel_static_assert(struct token *token, struct symbol_list **list)
+{
+	return parse_static_assert(token->next, 1);
 }
 
 /* Make a statement out of an expression */
