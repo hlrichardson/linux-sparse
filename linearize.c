@@ -441,7 +441,7 @@ const char *show_instruction(struct instruction *insn)
 		break;
 
 	case OP_CONTEXT:
-		buf += sprintf(buf, "%s%d", insn->check ? "check: " : "", insn->increment);
+		buf += sprintf(buf, "%s %s%d", insn->context_expr? show_ident(insn->context_expr->symbol_name) : "",  insn->check ? "check: " : "", insn->increment);
 		break;
 	case OP_RANGE:
 		buf += sprintf(buf, "%s between %s..%s", show_pseudo(insn->src1), show_pseudo(insn->src2), show_pseudo(insn->src3));
