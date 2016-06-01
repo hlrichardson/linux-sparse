@@ -617,6 +617,8 @@ const char *ignored_attributes[] = {
 	"__warning__",
 	"weak",
 	"__weak__",
+	"no_sanitize_address",
+	"__no_sanitize_address__",
 };
 
 
